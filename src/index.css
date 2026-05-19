@@ -485,6 +485,13 @@ button {
     box-shadow 180ms ease;
 }
 
+.primary-action:disabled,
+.ghost-action:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+  transform: none;
+}
+
 .primary-action:hover,
 .primary-action:focus-visible,
 .ghost-action:hover,
@@ -517,6 +524,143 @@ button {
   background: #89fbff;
   box-shadow: 0 0 12px #89fbff;
   animation: blink 1s steps(1, end) infinite;
+}
+
+.members-screen {
+  align-items: stretch;
+  padding: 20px;
+}
+
+.members-home {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  width: min(100%, 1180px);
+  min-height: calc(100svh - 40px);
+  margin: 0 auto;
+  overflow: hidden;
+}
+
+.members-heading {
+  position: relative;
+  z-index: 2;
+  max-width: 760px;
+  padding: 18px 0 0;
+}
+
+.members-heading .signal-pills {
+  justify-content: flex-start;
+  margin-bottom: 18px;
+}
+
+.members-heading h1 {
+  max-width: 900px;
+  margin: 0;
+  color: #f7fcff;
+  font-size: clamp(2.1rem, 8.5vw, 6.2rem);
+  line-height: 1.02;
+  text-shadow:
+    0 0 22px rgba(116, 234, 255, 0.52),
+    0 0 52px rgba(108, 65, 255, 0.36);
+}
+
+.members-heading p:not(.eyebrow) {
+  max-width: 620px;
+  margin: 16px 0 0;
+  color: rgba(226, 247, 255, 0.74);
+  line-height: 1.7;
+}
+
+.members-field {
+  position: relative;
+  min-height: 50vh;
+}
+
+.empty-ensemble {
+  display: grid;
+  min-height: 44vh;
+  place-content: center;
+  border: 1px dashed rgba(127, 224, 255, 0.2);
+  color: rgba(229, 249, 255, 0.7);
+  text-align: center;
+}
+
+.empty-ensemble span {
+  color: rgba(132, 247, 255, 0.72);
+  font-size: 0.76rem;
+}
+
+.empty-ensemble p {
+  margin: 8px 0 0;
+}
+
+.floating-member {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  min-width: 88px;
+  color: rgba(245, 252, 255, 0.92);
+  filter: drop-shadow(0 0 18px rgba(80, 235, 255, 0.22));
+  transform: translate(-50%, -50%) scale(var(--scale));
+  animation: memberFloat 8s ease-in-out infinite alternate;
+  animation-delay: var(--delay);
+}
+
+.floating-member::before {
+  position: absolute;
+  inset: -12px -18px;
+  border: 1px solid rgba(121, 238, 255, 0.09);
+  border-radius: 999px;
+  content: "";
+  opacity: 0.58;
+}
+
+.floating-member span {
+  max-width: 120px;
+  border: 1px solid rgba(108, 246, 255, 0.2);
+  padding: 4px 8px;
+  background: rgba(2, 8, 18, 0.58);
+  font-size: 0.74rem;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+
+.avatar-image {
+  display: grid;
+  width: 72px;
+  height: 72px;
+  place-items: center;
+  border: 1px solid rgba(133, 247, 255, 0.46);
+  border-radius: 999px;
+  object-fit: cover;
+  color: #f7fcff;
+  background:
+    radial-gradient(circle at 35% 20%, rgba(107, 250, 255, 0.32), transparent 38%),
+    linear-gradient(135deg, rgba(29, 255, 210, 0.18), rgba(119, 92, 255, 0.26)),
+    rgba(5, 12, 28, 0.92);
+  box-shadow:
+    0 0 22px rgba(76, 246, 255, 0.26),
+    0 0 0 4px rgba(3, 9, 24, 0.72);
+  font-size: 1.5rem;
+}
+
+.avatar-fallback {
+  font-weight: 700;
+}
+
+.members-action {
+  position: relative;
+  z-index: 3;
+  display: grid;
+  justify-items: center;
+  padding: 20px 0 6px;
+}
+
+.members-action .primary-action {
+  min-width: min(100%, 280px);
 }
 
 .form-shell {
@@ -669,6 +813,83 @@ button {
   font-style: normal;
 }
 
+.camera-capture {
+  display: grid;
+  gap: 12px;
+}
+
+.camera-preview {
+  position: relative;
+  display: grid;
+  width: min(100%, 420px);
+  aspect-ratio: 1;
+  place-items: center;
+  justify-self: center;
+  overflow: hidden;
+  border: 1px solid rgba(124, 232, 255, 0.24);
+  border-radius: 999px;
+  background:
+    radial-gradient(circle, rgba(81, 238, 255, 0.12), transparent 62%),
+    rgba(2, 8, 18, 0.78);
+  box-shadow:
+    0 0 34px rgba(74, 238, 255, 0.18),
+    0 0 0 10px rgba(3, 10, 24, 0.3);
+}
+
+.camera-preview::before {
+  position: absolute;
+  inset: 18%;
+  border: 1px solid rgba(133, 247, 255, 0.18);
+  border-radius: 999px;
+  content: "";
+  pointer-events: none;
+}
+
+.camera-preview video,
+.camera-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.camera-preview span {
+  color: rgba(193, 241, 255, 0.54);
+  font-size: 0.78rem;
+}
+
+.camera-message {
+  margin: 0;
+  color: rgba(255, 208, 231, 0.78);
+  font-size: 0.78rem;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.camera-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.file-capture {
+  grid-column: 1 / -1;
+  display: grid;
+  min-height: 44px;
+  place-items: center;
+  border: 1px solid rgba(181, 225, 255, 0.22);
+  color: rgba(243, 252, 255, 0.76);
+  background: rgba(2, 8, 18, 0.34);
+  font-size: 0.84rem;
+}
+
+.file-capture input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .option-grid {
   display: grid;
   gap: 9px;
@@ -774,6 +995,11 @@ button {
   text-align: left;
 }
 
+.join-avatar {
+  width: 86px;
+  height: 86px;
+}
+
 .join-summary span {
   color: rgba(176, 243, 255, 0.62);
   font-size: 0.7rem;
@@ -867,6 +1093,18 @@ button {
   margin: 4px 0 0;
   color: #ffffff;
   overflow-wrap: anywhere;
+}
+
+.card-avatar {
+  width: 58px;
+  height: 58px;
+  font-size: 1.1rem;
+}
+
+@keyframes memberFloat {
+  to {
+    transform: translate(calc(-50% + 12px), calc(-50% - 18px)) scale(var(--scale));
+  }
 }
 
 .look-up {
@@ -1071,6 +1309,31 @@ button {
     padding: clamp(64px, 7vw, 96px);
   }
 
+  .members-screen {
+    padding: 44px clamp(54px, 6vw, 110px);
+  }
+
+  .members-home {
+    min-height: calc(100vh - 88px);
+  }
+
+  .members-heading {
+    padding-top: 0;
+  }
+
+  .members-field {
+    min-height: 58vh;
+  }
+
+  .avatar-image {
+    width: 86px;
+    height: 86px;
+  }
+
+  .floating-member span {
+    font-size: 0.78rem;
+  }
+
   .glitch-title {
     font-size: clamp(6.5rem, 9vw, 10rem);
   }
@@ -1198,6 +1461,10 @@ button {
     width: 116%;
     height: 120%;
   }
+
+  .camera-preview {
+    width: min(100%, 330px);
+  }
 }
 
 @media (min-width: 1440px) {
@@ -1288,6 +1555,46 @@ button {
   .primary-action,
   .ghost-action {
     min-height: 52px;
+  }
+
+  .members-screen {
+    padding: 14px;
+  }
+
+  .members-home {
+    min-height: calc(100svh - 28px);
+  }
+
+  .members-heading h1 {
+    font-size: clamp(1.8rem, 12vw, 3.2rem);
+  }
+
+  .members-heading p:not(.eyebrow) {
+    font-size: 0.84rem;
+    line-height: 1.55;
+  }
+
+  .members-field {
+    min-height: 48vh;
+  }
+
+  .floating-member {
+    min-width: 70px;
+  }
+
+  .avatar-image {
+    width: 58px;
+    height: 58px;
+    font-size: 1.15rem;
+  }
+
+  .floating-member span {
+    max-width: 88px;
+    font-size: 0.66rem;
+  }
+
+  .camera-actions {
+    grid-template-columns: 1fr;
   }
 
   .entry-counter {

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import './index.css'
 
 const identityOptions = ['老师', '本课程同学', '其他学生', '其他观众']
@@ -12,7 +12,7 @@ const feelingOptions = [
 ]
 
 const storageKey = 'ensemble-check-in-entries'
-const stepLabels = ['NAME', 'ROLE', 'FEELING', 'PROMPT', 'JOIN']
+const stepLabels = ['NAME', 'PHOTO', 'ROLE', 'FEELING', 'PROMPT', 'JOIN']
 
 function getVoiceType(aiFeeling) {
   return (
@@ -26,6 +26,14 @@ function saveEntry(entry) {
   const nextEntries = [...existingEntries, entry]
   localStorage.setItem(storageKey, JSON.stringify(nextEntries))
   return nextEntries
+}
+
+function loadEntries() {
+  try {
+    return JSON.parse(localStorage.getItem(storageKey) || '[]')
+  } catch {
+    return []
+  }
 }
 
 function isExpiredInvite() {
@@ -122,27 +130,65 @@ function SignalPills() {
   )
 }
 
-function EntrancePage({ onEnter }) {
+function Avatar({ entry, className = '' }) {
+  const initial = (entry.name || '?').trim().slice(0, 1).toUpperCase()
+
+  return entry.photo ? (
+    <img className={`avatar-image ${className}`} src={entry.photo} alt="" />
+  ) : (
+    <span className={`avatar-image avatar-fallback ${className}`}>{initial}</span>
+  )
+}
+
+function FloatingMembers({ entries }) {
+  const visibleEntries = entries.slice(-28)
+
+  if (visibleEntries.length === 0) {
+    return (
+      <div className="empty-ensemble">
+        <span>NO VOICES YET</span>
+        <p>等待第一位成员加入合奏。</p>
+      </div>
+    )
+  }
+
   return (
-    <main className="screen entrance-screen">
-      <AmbientStage />
-      <section className="hero-panel page-fade">
-        <SignalPills />
-        <p className="eyebrow">AI GENERATIVE LIVE SHOW</p>
-        <h1 className="glitch-title" data-text="合奏 Ensemble">
-          合奏 Ensemble
-        </h1>
-        <p className="subtitle">视觉、交互与音乐的 AI 生成现场</p>
-        <p className="intro">在进入现场之前，请留下你的一个声部。</p>
-        <div className="loading-track" aria-hidden="true">
-          <span />
+    <div className="members-field" aria-label="正在参与合奏的成员">
+      {visibleEntries.map((entry, index) => (
+        <div
+          className="floating-member"
+          key={`${entry.timestamp}-${index}`}
+          style={{
+            '--x': `${8 + ((index * 29) % 82)}%`,
+            '--y': `${12 + ((index * 43) % 70)}%`,
+            '--delay': `${(index % 9) * -0.8}s`,
+            '--scale': `${0.88 + (index % 5) * 0.05}`,
+          }}
+        >
+          <Avatar entry={entry} />
+          <span>{entry.name}</span>
         </div>
-        <button className="primary-action" type="button" onClick={onEnter}>
-          Enter / 进入合奏
-        </button>
-        <div className="terminal-line" aria-hidden="true">
-          <span>&gt; awaiting audience input</span>
-          <i />
+      ))}
+    </div>
+  )
+}
+
+function EntrancePage({ entries, onEnter }) {
+  return (
+    <main className="screen entrance-screen members-screen">
+      <AmbientStage />
+      <section className="members-home page-fade">
+        <div className="members-heading">
+          <SignalPills />
+          <p className="eyebrow">合奏 Ensemble</p>
+          <h1>正在参与合奏的成员</h1>
+          <p>圆形头像与名字正在现场中漂浮。加入后，你也会成为其中一个声部。</p>
+        </div>
+        <FloatingMembers entries={entries} />
+        <div className="members-action">
+          <button className="primary-action" type="button" onClick={onEnter}>
+            加入合奏
+          </button>
         </div>
       </section>
     </main>
@@ -165,10 +211,147 @@ function ExpiredPage() {
   )
 }
 
+function CameraCapture({ photo, onCapture }) {
+  const videoRef = useRef(null)
+  const streamRef = useRef(null)
+  const [cameraState, setCameraState] = useState('idle')
+  const [message, setMessage] = useState('')
+
+  useEffect(() => {
+    return () => {
+      streamRef.current?.getTracks().forEach((track) => track.stop())
+    }
+  }, [])
+
+  async function startCamera() {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setCameraState('fallback')
+      setMessage('当前浏览器不支持实时摄像头，请使用下方拍照上传。')
+      return
+    }
+
+    try {
+      setCameraState('starting')
+      streamRef.current?.getTracks().forEach((track) => track.stop())
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: {
+          facingMode: { ideal: 'environment' },
+          width: { ideal: 960 },
+          height: { ideal: 960 },
+        },
+      })
+
+      streamRef.current = stream
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream
+        await videoRef.current.play()
+      }
+      setMessage('')
+      setCameraState('ready')
+    } catch {
+      setCameraState('fallback')
+      setMessage('无法启动摄像头。手机扫码时如遇到权限限制，请使用拍照上传。')
+    }
+  }
+
+  function captureFromVideo() {
+    const video = videoRef.current
+    if (!video?.videoWidth) {
+      return
+    }
+
+    const canvas = document.createElement('canvas')
+    const size = Math.min(video.videoWidth, video.videoHeight)
+    canvas.width = 512
+    canvas.height = 512
+    const context = canvas.getContext('2d')
+    context.drawImage(
+      video,
+      (video.videoWidth - size) / 2,
+      (video.videoHeight - size) / 2,
+      size,
+      size,
+      0,
+      0,
+      512,
+      512,
+    )
+    onCapture(canvas.toDataURL('image/jpeg', 0.78))
+  }
+
+  function captureFromFile(event) {
+    const file = event.target.files?.[0]
+    if (!file) {
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = () => {
+      const image = new Image()
+      image.onload = () => {
+        const canvas = document.createElement('canvas')
+        const size = Math.min(image.width, image.height)
+        canvas.width = 512
+        canvas.height = 512
+        const context = canvas.getContext('2d')
+        context.drawImage(
+          image,
+          (image.width - size) / 2,
+          (image.height - size) / 2,
+          size,
+          size,
+          0,
+          0,
+          512,
+          512,
+        )
+        onCapture(canvas.toDataURL('image/jpeg', 0.78))
+      }
+      image.src = reader.result
+    }
+    reader.readAsDataURL(file)
+  }
+
+  return (
+    <div className="camera-capture">
+      <div className="camera-preview">
+        {photo ? (
+          <img src={photo} alt="已拍摄头像预览" />
+        ) : (
+          <>
+            <video ref={videoRef} playsInline muted />
+            {cameraState !== 'ready' && <span>CAMERA INPUT</span>}
+          </>
+        )}
+      </div>
+      {message && <p className="camera-message">{message}</p>}
+      <div className="camera-actions">
+        <button className="ghost-action" type="button" onClick={startCamera}>
+          打开后置摄像头
+        </button>
+        <button
+          className="primary-action"
+          disabled={cameraState !== 'ready'}
+          type="button"
+          onClick={captureFromVideo}
+        >
+          拍摄头像
+        </button>
+        <label className="file-capture">
+          <input accept="image/*" capture="environment" onChange={captureFromFile} type="file" />
+          使用手机相机拍照
+        </label>
+      </div>
+    </div>
+  )
+}
+
 function CheckInForm({ onSubmit }) {
   const [formStep, setFormStep] = useState(0)
   const [formData, setFormData] = useState({
     name: '',
+    photo: '',
     identity: '',
     aiFeeling: '',
     promptWish: '',
@@ -187,11 +370,11 @@ function CheckInForm({ onSubmit }) {
       nextErrors.name = '请输入你的姓名或昵称'
     }
 
-    if (step === 1 && !formData.identity) {
+    if (step === 2 && !formData.identity) {
       nextErrors.identity = '请选择身份'
     }
 
-    if (step === 2 && !formData.aiFeeling) {
+    if (step === 3 && !formData.aiFeeling) {
       nextErrors.aiFeeling = '请选择你现在面对 AI 的感觉'
     }
 
@@ -229,19 +412,20 @@ function CheckInForm({ onSubmit }) {
     }
 
     if (!formData.identity) {
-      setFormStep(1)
+      setFormStep(2)
       setErrors({ identity: '请选择身份' })
       return
     }
 
     if (!formData.aiFeeling) {
-      setFormStep(2)
+      setFormStep(3)
       setErrors({ aiFeeling: '请选择你现在面对 AI 的感觉' })
       return
     }
 
     const entry = {
       name: formData.name.trim(),
+      photo: formData.photo,
       identity: formData.identity,
       aiFeeling: formData.aiFeeling,
       promptWish: formData.promptWish.trim(),
@@ -249,7 +433,6 @@ function CheckInForm({ onSubmit }) {
       timestamp: new Date().toISOString(),
     }
 
-    saveEntry(entry)
     onSubmit(entry)
   }
 
@@ -304,6 +487,26 @@ function CheckInForm({ onSubmit }) {
           )}
 
           {formStep === 1 && (
+            <section className="form-step page-fade" aria-label="拍摄头像">
+              <div className="field-block">
+                <span>拍摄参展人员头像</span>
+                <CameraCapture
+                  photo={formData.photo}
+                  onCapture={(photo) => updateField('photo', photo)}
+                />
+              </div>
+              <div className="step-actions two-actions">
+                <button className="ghost-action" type="button" onClick={goBack}>
+                  Back
+                </button>
+                <button className="primary-action" type="button" onClick={goNext}>
+                  {formData.photo ? 'Continue / 继续' : 'Skip / 跳过'}
+                </button>
+              </div>
+            </section>
+          )}
+
+          {formStep === 2 && (
             <section className="form-step page-fade" aria-label="身份">
               <fieldset className="field-block">
                 <legend>身份</legend>
@@ -335,7 +538,7 @@ function CheckInForm({ onSubmit }) {
             </section>
           )}
 
-          {formStep === 2 && (
+          {formStep === 3 && (
             <section className="form-step page-fade" aria-label="AI 感觉">
               <fieldset className="field-block">
                 <legend>你现在面对 AI 的感觉是？</legend>
@@ -367,7 +570,7 @@ function CheckInForm({ onSubmit }) {
             </section>
           )}
 
-          {formStep === 3 && (
+          {formStep === 4 && (
             <section className="form-step page-fade" aria-label="生成愿望">
               <label className="field-block focus-field">
                 <span>我希望 AI 帮我生成：</span>
@@ -390,10 +593,11 @@ function CheckInForm({ onSubmit }) {
             </section>
           )}
 
-          {formStep === 4 && (
+          {formStep === 5 && (
             <section className="form-step join-step page-fade" aria-label="加入合奏">
               <div className="join-summary">
                 <span>READY TO JOIN</span>
+                <Avatar entry={formData} className="join-avatar" />
                 <strong>{formData.name || 'Unnamed Voice'}</strong>
                 <p>{getVoiceType(formData.aiFeeling)}</p>
               </div>
@@ -421,6 +625,12 @@ function EntryCard({ entry }) {
         <b>LIVE</b>
       </div>
       <dl>
+        <div>
+          <dt>Avatar</dt>
+          <dd>
+            <Avatar entry={entry} className="card-avatar" />
+          </dd>
+        </div>
         <div>
           <dt>Name</dt>
           <dd>{entry.name}</dd>
@@ -462,17 +672,12 @@ function App() {
   const [isInviteExpired] = useState(isExpiredInvite)
   const [step, setStep] = useState('entrance')
   const [latestEntry, setLatestEntry] = useState(null)
-  const [entryCount, setEntryCount] = useState(() => {
-    try {
-      return JSON.parse(localStorage.getItem(storageKey) || '[]').length
-    } catch {
-      return 0
-    }
-  })
+  const [entries, setEntries] = useState(loadEntries)
 
   function handleSubmit(entry) {
+    const nextEntries = saveEntry(entry)
     setLatestEntry(entry)
-    setEntryCount((current) => current + 1)
+    setEntries(nextEntries)
     setStep('success')
   }
 
@@ -482,7 +687,9 @@ function App() {
         <ExpiredPage />
       ) : (
         <>
-          {step === 'entrance' && <EntrancePage onEnter={() => setStep('form')} />}
+          {step === 'entrance' && (
+            <EntrancePage entries={entries} onEnter={() => setStep('form')} />
+          )}
           {step === 'form' && <CheckInForm onSubmit={handleSubmit} />}
           {step === 'success' && latestEntry && (
             <SuccessPage
@@ -496,7 +703,7 @@ function App() {
         </>
       )}
       <aside className="entry-counter" aria-label="local entry count">
-        local voices: {entryCount}
+        local voices: {entries.length}
       </aside>
     </div>
   )
