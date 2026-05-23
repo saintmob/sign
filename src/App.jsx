@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import './index.css'
+import { createCheckin, fetchCheckins } from './lib/api'
 
 const identityOptions = ['老师', '本课程同学', '其他学生', '其他观众']
 
@@ -668,11 +669,47 @@ function App() {
   const [step, setStep] = useState('entrance')
   const [latestEntry, setLatestEntry] = useState(null)
   const [entries, setEntries] = useState(loadEntries)
+  const [syncMessage, setSyncMessage] = useState('syncing')
 
-  function handleSubmit(entry) {
-    const nextEntries = saveEntry(entry)
-    setLatestEntry(entry)
-    setEntries(nextEntries)
+  useEffect(() => {
+    let ignore = false
+
+    async function loadRemoteEntries() {
+      try {
+        const remoteEntries = await fetchCheckins()
+        if (ignore) return
+        localStorage.setItem(storageKey, JSON.stringify(remoteEntries))
+        setEntries(remoteEntries)
+        setSyncMessage('synced')
+      } catch (error) {
+        console.warn('Unable to load remote check-ins', error)
+        if (!ignore) setSyncMessage('local')
+      }
+    }
+
+    loadRemoteEntries()
+    const interval = window.setInterval(loadRemoteEntries, 15000)
+    return () => {
+      ignore = true
+      window.clearInterval(interval)
+    }
+  }, [])
+
+  async function handleSubmit(entry) {
+    try {
+      const savedEntry = await createCheckin(entry)
+      const nextEntries = [...entries, savedEntry]
+      localStorage.setItem(storageKey, JSON.stringify(nextEntries))
+      setLatestEntry(savedEntry)
+      setEntries(nextEntries)
+      setSyncMessage('synced')
+    } catch (error) {
+      console.warn('Unable to save remote check-in', error)
+      const nextEntries = saveEntry(entry)
+      setLatestEntry(entry)
+      setEntries(nextEntries)
+      setSyncMessage('local')
+    }
     setStep('success')
   }
 
@@ -698,7 +735,7 @@ function App() {
         </>
       )}
       <aside className="entry-counter" aria-label="local entry count">
-        local voices: {entries.length}
+        {syncMessage === 'synced' ? 'synced voices' : syncMessage === 'syncing' ? 'syncing voices' : 'local voices'}: {entries.length}
       </aside>
     </div>
   )
