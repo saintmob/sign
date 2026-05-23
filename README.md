@@ -6,7 +6,6 @@
 
 - `GET /api/checkins`
 - `POST /api/checkins`
-- `DELETE /api/checkins?id=<id>`
 
 Firestore 默认集合：`ensembleCheckins`。
 
