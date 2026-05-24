@@ -4,22 +4,18 @@ import { createCheckin, fetchCheckins } from './lib/api'
 
 const identityOptions = ['老师', '本课程同学', '其他学生', '其他观众']
 
-const feelingOptions = [
-  { value: '好奇 Curious', voiceType: 'Curious Voice / 好奇声部' },
-  { value: '兴奋 Excited', voiceType: 'Bright Beat / 明亮节拍' },
-  { value: '混乱 Confused', voiceType: 'Glitch Note / 故障音符' },
-  { value: '害怕 Afraid', voiceType: 'Soft Error / 柔软报错' },
-  { value: '想试试 Ready to Try', voiceType: 'Ready Input / 待生成输入' },
-]
-
 const storageKey = 'ensemble-check-in-entries'
-const stepLabels = ['NAME', 'PHOTO', 'ROLE', 'FEELING', 'PROMPT', 'JOIN']
+const stepLabels = ['NAME', 'PHOTO', 'ROLE', 'JOIN']
 
-function getVoiceType(aiFeeling) {
-  return (
-    feelingOptions.find((option) => option.value === aiFeeling)?.voiceType ||
-    'Unknown Signal / 未知声部'
-  )
+function getIdentityTone(identity) {
+  const toneMap = {
+    老师: 'teacher',
+    本课程同学: 'course-student',
+    其他学生: 'outside-student',
+    其他观众: 'other-visitor',
+  }
+
+  return toneMap[identity] || 'other-visitor'
 }
 
 function saveEntry(entry) {
@@ -123,11 +119,14 @@ function SignalPills() {
 
 function Avatar({ entry, className = '' }) {
   const initial = (entry.name || '?').trim().slice(0, 1).toUpperCase()
+  const toneClass = `avatar-${getIdentityTone(entry.identity)}`
 
   return entry.photo ? (
-    <img className={`avatar-image ${className}`} src={entry.photo} alt="" />
+    <img className={`avatar-image ${toneClass} ${className}`} src={entry.photo} alt="" />
   ) : (
-    <span className={`avatar-image avatar-fallback ${className}`}>{initial}</span>
+    <span className={`avatar-image avatar-fallback ${toneClass} ${className}`}>
+      {initial}
+    </span>
   )
 }
 
@@ -344,8 +343,6 @@ function CheckInForm({ onSubmit }) {
     name: '',
     photo: '',
     identity: '',
-    aiFeeling: '',
-    promptWish: '',
   })
   const [errors, setErrors] = useState({})
 
@@ -363,10 +360,6 @@ function CheckInForm({ onSubmit }) {
 
     if (step === 2 && !formData.identity) {
       nextErrors.identity = '请选择身份'
-    }
-
-    if (step === 3 && !formData.aiFeeling) {
-      nextErrors.aiFeeling = '请选择你现在面对 AI 的感觉'
     }
 
     setErrors(nextErrors)
@@ -408,19 +401,10 @@ function CheckInForm({ onSubmit }) {
       return
     }
 
-    if (!formData.aiFeeling) {
-      setFormStep(3)
-      setErrors({ aiFeeling: '请选择你现在面对 AI 的感觉' })
-      return
-    }
-
     const entry = {
       name: formData.name.trim(),
       photo: formData.photo,
       identity: formData.identity,
-      aiFeeling: formData.aiFeeling,
-      promptWish: formData.promptWish.trim(),
-      voiceType: getVoiceType(formData.aiFeeling),
       timestamp: new Date().toISOString(),
     }
 
@@ -530,67 +514,12 @@ function CheckInForm({ onSubmit }) {
           )}
 
           {formStep === 3 && (
-            <section className="form-step page-fade" aria-label="AI 感觉">
-              <fieldset className="field-block">
-                <legend>你现在面对 AI 的感觉是？</legend>
-                <div className="option-grid feeling-grid">
-                  {feelingOptions.map((option) => (
-                    <label
-                      className={
-                        formData.aiFeeling === option.value ? 'option selected' : 'option'
-                      }
-                      key={option.value}
-                    >
-                      <input
-                        checked={formData.aiFeeling === option.value}
-                        name="aiFeeling"
-                        onChange={() => selectAndAdvance('aiFeeling', option.value)}
-                        type="radio"
-                      />
-                      <span>{option.value}</span>
-                    </label>
-                  ))}
-                </div>
-                {errors.aiFeeling && <em>{errors.aiFeeling}</em>}
-              </fieldset>
-              <div className="step-actions">
-                <button className="ghost-action" type="button" onClick={goBack}>
-                  Back
-                </button>
-              </div>
-            </section>
-          )}
-
-          {formStep === 4 && (
-            <section className="form-step page-fade" aria-label="生成愿望">
-              <label className="field-block focus-field">
-                <span>我希望 AI 帮我生成：</span>
-                <textarea
-                  autoFocus
-                  onChange={(event) => updateField('promptWish', event.target.value)}
-                  placeholder="例如：一段音乐 / 一个网页 / 一个梦 / 一个新的想法"
-                  rows="5"
-                  value={formData.promptWish}
-                />
-              </label>
-              <div className="step-actions two-actions">
-                <button className="ghost-action" type="button" onClick={goBack}>
-                  Back
-                </button>
-                <button className="primary-action" type="button" onClick={goNext}>
-                  Continue / 继续
-                </button>
-              </div>
-            </section>
-          )}
-
-          {formStep === 5 && (
             <section className="form-step join-step page-fade" aria-label="加入合奏">
               <div className="join-summary">
                 <span>READY TO JOIN</span>
                 <Avatar entry={formData} className="join-avatar" />
                 <strong>{formData.name || 'Unnamed Voice'}</strong>
-                <p>{getVoiceType(formData.aiFeeling)}</p>
+                <p>{formData.identity}</p>
               </div>
               <div className="step-actions two-actions">
                 <button className="ghost-action" type="button" onClick={goBack}>
@@ -627,8 +556,8 @@ function EntryCard({ entry }) {
           <dd>{entry.name}</dd>
         </div>
         <div>
-          <dt>Voice</dt>
-          <dd>{entry.voiceType}</dd>
+          <dt>Identity</dt>
+          <dd>{entry.identity}</dd>
         </div>
         <div>
           <dt>Status</dt>

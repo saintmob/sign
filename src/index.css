@@ -576,11 +576,13 @@ button {
 }
 
 .avatar-image {
+  --avatar-color: rgba(168, 111, 255, 0.86);
+  --avatar-glow: rgba(168, 111, 255, 0.36);
   display: grid;
   width: 72px;
   height: 72px;
   place-items: center;
-  border: 1px solid rgba(133, 247, 255, 0.46);
+  border: 2px solid var(--avatar-color);
   border-radius: 999px;
   object-fit: cover;
   color: #f7fcff;
@@ -589,9 +591,30 @@ button {
     linear-gradient(135deg, rgba(29, 255, 210, 0.18), rgba(119, 92, 255, 0.26)),
     rgba(5, 12, 28, 0.92);
   box-shadow:
-    0 0 22px rgba(76, 246, 255, 0.26),
+    0 0 20px var(--avatar-glow),
+    0 0 7px var(--avatar-glow),
     0 0 0 4px rgba(3, 9, 24, 0.72);
   font-size: 1.5rem;
+}
+
+.avatar-course-student {
+  --avatar-color: rgba(72, 170, 255, 0.96);
+  --avatar-glow: rgba(72, 170, 255, 0.38);
+}
+
+.avatar-teacher {
+  --avatar-color: rgba(255, 78, 105, 0.96);
+  --avatar-glow: rgba(255, 78, 105, 0.38);
+}
+
+.avatar-outside-student {
+  --avatar-color: rgba(89, 241, 137, 0.96);
+  --avatar-glow: rgba(89, 241, 137, 0.36);
+}
+
+.avatar-other-visitor {
+  --avatar-color: rgba(177, 107, 255, 0.96);
+  --avatar-glow: rgba(177, 107, 255, 0.38);
 }
 
 .avatar-fallback {
@@ -647,7 +670,7 @@ button {
 
 .step-progress {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 6px;
   margin: 0 0 24px;
 }
@@ -1219,13 +1242,6 @@ button {
     min-height: 360px;
   }
 
-  .feeling-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .feeling-grid .option:last-child {
-    grid-column: 1 / -1;
-  }
 }
 
 @media (min-width: 1024px) {
@@ -1358,10 +1374,6 @@ button {
   }
 
   .identity-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .feeling-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
