@@ -841,23 +841,8 @@ button {
   gap: 10px;
 }
 
-.file-capture {
+.camera-actions > :only-child {
   grid-column: 1 / -1;
-  display: grid;
-  min-height: 44px;
-  place-items: center;
-  border: 1px solid rgba(181, 225, 255, 0.22);
-  color: rgba(243, 252, 255, 0.76);
-  background: rgba(2, 8, 18, 0.34);
-  font-size: 0.84rem;
-}
-
-.file-capture input {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  opacity: 0;
-  pointer-events: none;
 }
 
 .option-grid {

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import './index.css'
 import { createCheckin, fetchCheckins } from './lib/api'
 
@@ -201,36 +201,51 @@ function ExpiredPage() {
   )
 }
 
+async function getCameraStream() {
+  const baseVideo = {
+    width: { ideal: 960 },
+    height: { ideal: 960 },
+  }
+
+  try {
+    return await navigator.mediaDevices.getUserMedia({
+      audio: false,
+      video: {
+        ...baseVideo,
+        facingMode: { ideal: 'user' },
+      },
+    })
+  } catch {
+    return navigator.mediaDevices.getUserMedia({
+      audio: false,
+      video: baseVideo,
+    })
+  }
+}
+
 function CameraCapture({ photo, onCapture }) {
   const videoRef = useRef(null)
   const streamRef = useRef(null)
   const [cameraState, setCameraState] = useState('idle')
   const [message, setMessage] = useState('')
 
-  useEffect(() => {
-    return () => {
-      streamRef.current?.getTracks().forEach((track) => track.stop())
-    }
-  }, [])
-
-  async function startCamera() {
+  const startCamera = useCallback(async () => {
     if (!navigator.mediaDevices?.getUserMedia) {
-      setCameraState('fallback')
-      setMessage('当前浏览器不支持实时摄像头，请使用下方拍照上传。')
+      setCameraState('error')
+      setMessage('当前浏览器不支持实时摄像头。请使用手机自带浏览器重新打开页面。')
+      return
+    }
+
+    if (!window.isSecureContext) {
+      setCameraState('error')
+      setMessage('摄像头需要 HTTPS 或 localhost 安全环境。手机扫码访问局域网 HTTP 地址时，浏览器会阻止摄像头。')
       return
     }
 
     try {
       setCameraState('starting')
       streamRef.current?.getTracks().forEach((track) => track.stop())
-      const stream = await navigator.mediaDevices.getUserMedia({
-        audio: false,
-        video: {
-          facingMode: { ideal: 'environment' },
-          width: { ideal: 960 },
-          height: { ideal: 960 },
-        },
-      })
+      const stream = await getCameraStream()
 
       streamRef.current = stream
       if (videoRef.current) {
@@ -240,10 +255,16 @@ function CameraCapture({ photo, onCapture }) {
       setMessage('')
       setCameraState('ready')
     } catch {
-      setCameraState('fallback')
-      setMessage('无法启动摄像头。手机扫码时如遇到权限限制，请使用拍照上传。')
+      setCameraState('error')
+      setMessage('无法启动摄像头。请确认浏览器已允许摄像头权限，然后重新打开摄像头。')
     }
-  }
+  }, [])
+
+  useEffect(() => {
+    return () => {
+      streamRef.current?.getTracks().forEach((track) => track.stop())
+    }
+  }, [])
 
   function captureFromVideo() {
     const video = videoRef.current
@@ -270,37 +291,9 @@ function CameraCapture({ photo, onCapture }) {
     onCapture(canvas.toDataURL('image/jpeg', 0.78))
   }
 
-  function captureFromFile(event) {
-    const file = event.target.files?.[0]
-    if (!file) {
-      return
-    }
-
-    const reader = new FileReader()
-    reader.onload = () => {
-      const image = new Image()
-      image.onload = () => {
-        const canvas = document.createElement('canvas')
-        const size = Math.min(image.width, image.height)
-        canvas.width = 512
-        canvas.height = 512
-        const context = canvas.getContext('2d')
-        context.drawImage(
-          image,
-          (image.width - size) / 2,
-          (image.height - size) / 2,
-          size,
-          size,
-          0,
-          0,
-          512,
-          512,
-        )
-        onCapture(canvas.toDataURL('image/jpeg', 0.78))
-      }
-      image.src = reader.result
-    }
-    reader.readAsDataURL(file)
+  function retakePhoto() {
+    onCapture('')
+    startCamera()
   }
 
   return (
@@ -317,21 +310,19 @@ function CameraCapture({ photo, onCapture }) {
       </div>
       {message && <p className="camera-message">{message}</p>}
       <div className="camera-actions">
-        <button className="ghost-action" type="button" onClick={startCamera}>
-          打开后置摄像头
+        <button className="ghost-action" type="button" onClick={photo ? retakePhoto : startCamera}>
+          {photo ? '重新拍摄' : cameraState === 'ready' ? '重启摄像头' : '打开摄像头'}
         </button>
-        <button
-          className="primary-action"
-          disabled={cameraState !== 'ready'}
-          type="button"
-          onClick={captureFromVideo}
-        >
-          拍摄头像
-        </button>
-        <label className="file-capture">
-          <input accept="image/*" capture="environment" onChange={captureFromFile} type="file" />
-          使用手机相机拍照
-        </label>
+        {!photo && (
+          <button
+            className="primary-action"
+            disabled={cameraState !== 'ready'}
+            type="button"
+            onClick={captureFromVideo}
+          >
+            拍摄头像
+          </button>
+        )}
       </div>
     </div>
   )
