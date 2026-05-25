@@ -48,9 +48,7 @@ export async function createGuest(entry) {
     body: JSON.stringify({
       fullName: entry.fullName,
       identity: entry.identity,
-      photo: entry.selfieThumbnailUrl || entry.selfieUrl || entry.photo || '',
-      selfieUrl: entry.selfieUrl,
-      selfieThumbnailUrl: entry.selfieThumbnailUrl,
+      photo: entry.photo || entry.selfieThumbnailUrl || entry.selfieUrl || '',
     }),
   })
 

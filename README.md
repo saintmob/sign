@@ -18,12 +18,10 @@
 
 - `fullName`
 - `identity`
-- `selfieUrl`
-- `selfieThumbnailUrl`
 - `photo`
 
-当前页面使用后置摄像头拍摄头像，提交时会先自动上传到临时公开图片地址，再把该 HTTPS 链接提交给后端，不再要求填写图片链接。
-后端的 `photo` 字段现在同时兼容 `data:image/...` 和公开的 `http(s)` 图片直链。
+当前页面使用后置摄像头拍摄头像，提交时会把拍摄结果直接作为 `photo` 发送到 `POST /api/guests`。
+来宾头像状态通过 `GET /api/guests` 获取并渲染。
 
 ## Local
 

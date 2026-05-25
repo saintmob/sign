@@ -307,36 +307,6 @@ async function getCameraStream() {
   }
 }
 
-async function uploadCapturedSelfie(dataUrl) {
-  if (!dataUrl.startsWith('data:image/')) {
-    return dataUrl
-  }
-
-  const imageResponse = await fetch(dataUrl)
-  const blob = await imageResponse.blob()
-  const ext = blob.type === 'image/png' ? 'png' : 'jpg'
-  const formData = new FormData()
-  formData.append('file', blob, `selfie.${ext}`)
-  formData.append('expire', '86400')
-
-  const uploadResponse = await fetch('https://tmpfiles.org/api/v1/upload', {
-    method: 'POST',
-    body: formData,
-  })
-
-  if (!uploadResponse.ok) {
-    throw new Error('头像上传失败，请重试')
-  }
-
-  const payload = await uploadResponse.json().catch(() => null)
-  const uploadedUrl = payload?.data?.url?.replace('https://tmpfiles.org/', 'https://tmpfiles.org/dl/')
-  if (!uploadedUrl) {
-    throw new Error('头像上传失败，请重试')
-  }
-
-  return uploadedUrl
-}
-
 function PhotoCameraCapture({ previewUrl, onCapture, onRetake, onConfirm }) {
   const videoRef = useRef(null)
   const streamRef = useRef(null)
@@ -584,8 +554,6 @@ function CheckInForm({ onSubmit, submitting, submitError }) {
     onSubmit({
       fullName: formData.fullName.trim(),
       identity: formData.identity,
-      selfieUrl: formData.selfieUrl.trim(),
-      selfieThumbnailUrl: formData.selfieThumbnailUrl.trim() || formData.selfieUrl.trim(),
       photo: formData.selfieUrl.trim(),
     })
   }
@@ -836,16 +804,12 @@ function App() {
     setSubmitError('')
 
     try {
-      const uploadedSelfieUrl = await uploadCapturedSelfie(
-        entry.selfieUrl || entry.selfieThumbnailUrl || entry.photo || '',
-      )
-      const normalizedEntry = {
-        ...entry,
-        selfieUrl: uploadedSelfieUrl,
-        selfieThumbnailUrl: uploadedSelfieUrl,
-        photo: uploadedSelfieUrl,
+      const guestPayload = {
+        fullName: entry.fullName,
+        identity: entry.identity,
+        photo: entry.photo || '',
       }
-      const savedEntry = normalizeGuest({ ...normalizedEntry, ...(await createGuest(normalizedEntry)) })
+      const savedEntry = normalizeGuest({ ...guestPayload, ...(await createGuest(guestPayload)) })
       const nextEntries = [...entries, savedEntry]
       localStorage.setItem(storageKey, JSON.stringify(nextEntries))
       setLatestEntry(savedEntry)
