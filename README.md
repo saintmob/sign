@@ -20,8 +20,8 @@
 - `identity`
 - `photo`
 
-当前页面使用后置摄像头拍摄头像，提交时会把拍摄结果直接作为 `photo` 发送到 `POST /api/guests`。
-来宾头像状态通过 `GET /api/guests` 获取并渲染。
+当前页面使用后置摄像头拍摄头像，提交时会先上传成可公开访问的图片链接，再把同一链接写入 `photo`、`selfieUrl` 和 `selfieThumbnailUrl` 发送到 `POST /api/guests`。
+来宾头像状态通过 `GET /api/guests` 获取并渲染，最终使用返回的 `photo` 字段显示头像。
 
 ## Local
 

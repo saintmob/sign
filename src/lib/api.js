@@ -49,6 +49,8 @@ export async function createGuest(entry) {
       fullName: entry.fullName,
       identity: entry.identity,
       photo: entry.photo || entry.selfieThumbnailUrl || entry.selfieUrl || '',
+      selfieUrl: entry.selfieUrl || entry.photo || '',
+      selfieThumbnailUrl: entry.selfieThumbnailUrl || entry.photo || entry.selfieUrl || '',
     }),
   })
 

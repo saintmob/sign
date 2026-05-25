@@ -16,7 +16,9 @@
 {
   "fullName": "张三",
   "identity": "老师",
-  "photo": "data:image/jpeg;base64,..."
+  "photo": "https://tmpfiles.org/dl/xxx/selfie.jpg",
+  "selfieUrl": "https://tmpfiles.org/dl/xxx/selfie.jpg",
+  "selfieThumbnailUrl": "https://tmpfiles.org/dl/xxx/selfie.jpg"
 }
 ```
 
@@ -28,6 +30,6 @@
 
 ## 约定
 
-- 前端拍摄头像后，直接把拍摄结果作为 `photo` 发送给 `POST /api/guests`。
+- 前端拍摄头像后，会先上传成公开图片地址，再把同一链接写入 `photo`、`selfieUrl`、`selfieThumbnailUrl` 发送给 `POST /api/guests`。
 - 页面展示和列表展示都读取 `GET /api/guests` 返回的 `photo`。
-- 不再依赖临时图床或额外的图片上传接口。
+- 临时图床只作为上传中转，不作为最终展示源。
