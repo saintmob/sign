@@ -83,13 +83,13 @@ function isExpiredInvite() {
 
 function AmbientStage() {
   const traceLines = [
-    'M-30 590 C130 510 120 360 250 310 S380 200 505 250 665 470 830 350 980 310',
-    'M40 720 C190 620 285 705 382 585 510 425 610 690 790 520 930 430',
-    'M120 85 C260 170 185 300 330 330 475 380 430 505 610 535 735 566 750 430 960 365',
-    'M-20 250 C110 205 180 160 255 220 340 295 455 110 555 180 675 252 720 120 920 92',
-    'M260 850 C340 710 505 768 588 632 720 415 850 630 1000 515',
+    'M-30 590 L130 510 L250 310 L505 250 L830 350 L980 310',
+    'M40 720 L190 620 L285 705 L382 585 L510 425 L790 520 L930 430',
+    'M120 85 L260 170 L185 300 L330 330 L475 380 L610 535 L735 566 L960 365',
+    'M-20 250 L110 205 L180 160 L255 220 L340 295 L455 110 L555 180 L920 92',
+    'M260 850 L340 710 L505 768 L588 632 L720 415 L850 630 L1000 515',
     'M25 430 L160 515 L285 475 L390 610 L520 565 L670 730 L830 690 L985 780',
-    'M690 -40 C625 125 760 260 690 390 610 540 685 660 640 860',
+    'M690 -40 L625 125 L760 260 L690 390 L610 540 L685 660 L640 860',
   ]
 
   return (
@@ -298,6 +298,36 @@ async function getCameraStream() {
       video: baseVideo,
     })
   }
+}
+
+async function uploadCapturedSelfie(dataUrl) {
+  if (!dataUrl.startsWith('data:image/')) {
+    return dataUrl
+  }
+
+  const imageResponse = await fetch(dataUrl)
+  const blob = await imageResponse.blob()
+  const ext = blob.type === 'image/png' ? 'png' : 'jpg'
+  const formData = new FormData()
+  formData.append('file', blob, `selfie.${ext}`)
+  formData.append('expire', '86400')
+
+  const uploadResponse = await fetch('https://tmpfiles.org/api/v1/upload', {
+    method: 'POST',
+    body: formData,
+  })
+
+  if (!uploadResponse.ok) {
+    throw new Error('头像上传失败，请重试')
+  }
+
+  const payload = await uploadResponse.json().catch(() => null)
+  const uploadedUrl = payload?.data?.url
+  if (!uploadedUrl) {
+    throw new Error('头像上传失败，请重试')
+  }
+
+  return uploadedUrl
 }
 
 function PhotoCameraCapture({ previewUrl, onCapture, onRetake, onConfirm }) {
@@ -549,6 +579,7 @@ function CheckInForm({ onSubmit, submitting, submitError }) {
       identity: formData.identity,
       selfieUrl: formData.selfieUrl.trim(),
       selfieThumbnailUrl: formData.selfieThumbnailUrl.trim() || formData.selfieUrl.trim(),
+      photo: formData.selfieUrl.trim(),
     })
   }
 
@@ -798,7 +829,16 @@ function App() {
     setSubmitError('')
 
     try {
-      const savedEntry = normalizeGuest({ ...entry, ...(await createGuest(entry)) })
+      const uploadedSelfieUrl = await uploadCapturedSelfie(
+        entry.selfieUrl || entry.selfieThumbnailUrl || entry.photo || '',
+      )
+      const normalizedEntry = {
+        ...entry,
+        selfieUrl: uploadedSelfieUrl,
+        selfieThumbnailUrl: uploadedSelfieUrl,
+        photo: uploadedSelfieUrl,
+      }
+      const savedEntry = normalizeGuest({ ...normalizedEntry, ...(await createGuest(normalizedEntry)) })
       const nextEntries = [...entries, savedEntry]
       localStorage.setItem(storageKey, JSON.stringify(nextEntries))
       setLatestEntry(savedEntry)
