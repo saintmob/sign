@@ -124,8 +124,18 @@ export async function createCheckin(input) {
   if (!name) throw new ApiError(400, "请输入你的姓名或昵称");
   if (!identity) throw new ApiError(400, "请选择身份");
   if (!aiFeeling) throw new ApiError(400, "请选择你现在面对 AI 的感觉");
-  if (photo && (!photo.startsWith("data:image/") || photo.length > MAX_PHOTO_LENGTH)) {
+  if (photo.startsWith("data:image/") && photo.length > MAX_PHOTO_LENGTH) {
     throw new ApiError(400, "头像图片过大或格式无效");
+  }
+  if (
+    photo &&
+    !(
+      photo.startsWith("data:image/") ||
+      photo.startsWith("https://") ||
+      photo.startsWith("http://")
+    )
+  ) {
+    throw new ApiError(400, "头像图片格式无效");
   }
 
   const timestamp = new Date().toISOString();
@@ -157,4 +167,3 @@ export function sendApiError(res, error) {
   const message = error instanceof Error ? error.message : "服务器错误";
   res.status(statusCode).json({ error: message });
 }
-

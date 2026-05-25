@@ -154,11 +154,18 @@ function SignalPills() {
 }
 
 function Avatar({ entry, className = '' }) {
+  const [failedPhoto, setFailedPhoto] = useState('')
   const initial = (entry.name || entry.fullName || '?').trim().slice(0, 1).toUpperCase()
   const toneClass = `avatar-${getIdentityTone(entry.identity)}`
+  const imageFailed = failedPhoto === entry.photo
 
-  return entry.photo ? (
-    <img className={`avatar-image ${toneClass} ${className}`} src={entry.photo} alt="" />
+  return entry.photo && !imageFailed ? (
+    <img
+      className={`avatar-image ${toneClass} ${className}`}
+      onError={() => setFailedPhoto(entry.photo)}
+      src={entry.photo}
+      alt={entry.name || entry.fullName || '头像'}
+    />
   ) : (
     <span className={`avatar-image avatar-fallback ${toneClass} ${className}`}>
       {initial}
@@ -322,7 +329,7 @@ async function uploadCapturedSelfie(dataUrl) {
   }
 
   const payload = await uploadResponse.json().catch(() => null)
-  const uploadedUrl = payload?.data?.url
+  const uploadedUrl = payload?.data?.url?.replace('https://tmpfiles.org/', 'https://tmpfiles.org/dl/')
   if (!uploadedUrl) {
     throw new Error('头像上传失败，请重试')
   }
