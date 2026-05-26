@@ -5,6 +5,7 @@ const API_BASE = (import.meta.env.VITE_EVENT_API_BASE || DEFAULT_EVENT_API_BASE)
   /\/$/,
   '',
 )
+const UPLOAD_API_BASE = (import.meta.env.VITE_UPLOAD_API_BASE || '').replace(/\/$/, '')
 
 async function parseResponse(response) {
   const data = await response.json().catch(() => null)
@@ -16,6 +17,11 @@ async function parseResponse(response) {
 
 async function request(path, options) {
   const response = await fetch(`${API_BASE}${path}`, options)
+  return parseResponse(response)
+}
+
+async function uploadRequest(path, options) {
+  const response = await fetch(`${UPLOAD_API_BASE}${path}`, options)
   return parseResponse(response)
 }
 
@@ -49,7 +55,7 @@ export async function fetchGuests() {
 }
 
 export async function initGuestAvatarUpload(file) {
-  const data = await request('/api/uploads/init', {
+  const data = await uploadRequest('/api/uploads/init', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -115,7 +121,7 @@ async function uploadFileToDestination(upload, file) {
 }
 
 export async function completeGuestAvatarUpload(upload, file) {
-  const data = await request('/api/uploads/complete', {
+  const data = await uploadRequest('/api/uploads/complete', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

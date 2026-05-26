@@ -14,6 +14,8 @@
 
 - `https://show-plan-event-backend.liucheng-show-plan.workers.dev`
 
+上传代理默认走同源 `/api/uploads/*`，部署时需要配置 Cloudflare Images 相关环境变量。
+
 ## Guest payload
 
 来宾登记仅提交以下字段：

@@ -19,6 +19,8 @@
 5. 上传成功后调用 `POST /api/uploads/complete`，传 `uploadId`、`key` 等信息。
 6. 后端返回最终可访问的 `photo` URL 或 `photo` key。
 
+上传代理默认部署在同源 `/api/uploads/*`，需要配置 Cloudflare Images 的账号和 API token。
+
 ### 来宾签到
 
 `POST /api/guests`
