@@ -1,11 +1,17 @@
-const DEFAULT_EVENT_API_BASE =
-  'http://127.0.0.1:8787'
+const DEFAULT_EVENT_API_BASE = import.meta.env.DEV ? 'http://127.0.0.1:8787' : ''
 
-const API_BASE = (import.meta.env.VITE_EVENT_API_BASE || DEFAULT_EVENT_API_BASE).replace(
-  /\/$/,
-  '',
-)
-const UPLOAD_API_BASE = (import.meta.env.VITE_UPLOAD_API_BASE || API_BASE).replace(/\/$/, '')
+function normalizeBase(value) {
+  return String(value || '')
+    .trim()
+    .replace(/\/$/, '')
+}
+
+function buildApiUrl(base, path) {
+  return base ? `${base}${path}` : path
+}
+
+const API_BASE = normalizeBase(import.meta.env.VITE_EVENT_API_BASE || DEFAULT_EVENT_API_BASE)
+const UPLOAD_API_BASE = normalizeBase(import.meta.env.VITE_UPLOAD_API_BASE || API_BASE)
 
 async function parseResponse(response) {
   const data = await response.json().catch(() => null)
@@ -16,12 +22,12 @@ async function parseResponse(response) {
 }
 
 async function request(path, options) {
-  const response = await fetch(`${API_BASE}${path}`, options)
+  const response = await fetch(buildApiUrl(API_BASE, path), options)
   return parseResponse(response)
 }
 
 async function uploadRequest(path, options) {
-  const response = await fetch(`${UPLOAD_API_BASE}${path}`, options)
+  const response = await fetch(buildApiUrl(UPLOAD_API_BASE, path), options)
   return parseResponse(response)
 }
 
